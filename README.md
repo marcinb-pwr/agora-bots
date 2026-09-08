@@ -305,6 +305,12 @@ accidentally counted as the same observation.
 
 ## Delivery plan
 
+The phases below summarize the implementation sequence. The reviewable milestone list,
+including research-integrity gates and exit criteria, lives in
+[`docs/MILESTONES.md`](docs/MILESTONES.md). A milestone is complete only when its exit
+criteria are demonstrated; shipping a UI without provenance, source drill-down, or
+reproducible exports does not satisfy a research milestone.
+
 ### Phase 0 — decisions and foundations
 
 - Confirm threat model, publication policy, provider terms, retention, expected scale,
