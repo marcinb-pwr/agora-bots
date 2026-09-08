@@ -13,9 +13,38 @@ visitor can click or search a word, phrase, entity, or passage to discover where
 appears, how frequently different bots use it, which words surround it, and which
 semantically similar passages occur in other sessions.
 
-The project is currently in its architecture/bootstrap phase. This document defines
-the initial product contract and the recommended implementation path; it intentionally
-does not claim that the application exists yet.
+The project is currently in its architecture/bootstrap phase. The first reproducible
+foundation increment is scaffolded, but there is no runnable application yet. This
+document defines the initial product contract and the recommended implementation path.
+
+## Development
+
+### Prerequisites
+
+- Node.js 22 (see `.node-version`)
+- Corepack with pnpm 10.28.1
+- Docker with Compose for the local PostgreSQL and Redis dependencies
+
+Install the pinned workspace dependencies and run the validation suite:
+
+```bash
+corepack enable
+pnpm install --no-frozen-lockfile
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:integration
+pnpm build
+```
+
+Start or stop the local data services with `docker compose up -d` and
+`docker compose down`. PostgreSQL and Redis bind only to loopback and use development
+data volumes. The checked-in database password is exclusively for local development;
+deployment configuration must supply secrets externally.
+
+The initial `packages/providers` boundary contains a deterministic fake streaming
+provider for tests. It makes no network requests and is not a production provider.
 
 ## Product principles
 
@@ -385,9 +414,10 @@ the complete transcript from PostgreSQL.
 
 ## Development status
 
-There is no runnable application yet. Until Phase 0 scaffolding lands, documentation
-review is the only available validation. Contributor and Codex workflow rules live in
-[`AGENTS.md`](AGENTS.md).
+There is no runnable application yet. The M1 workspace scaffold supports format, lint,
+typecheck, unit, integration, and build validation; application, database migration,
+and browser checks will arrive in later vertical increments. Contributor and Codex
+workflow rules live in [`AGENTS.md`](AGENTS.md).
 
 ## License
 
