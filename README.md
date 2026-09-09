@@ -13,8 +13,8 @@ visitor can click or search a word, phrase, entity, or passage to discover where
 appears, how frequently different bots use it, which words surround it, and which
 semantically similar passages occur in other sessions.
 
-The project is currently in its architecture/bootstrap phase. The first reproducible
-foundation increment is scaffolded, but there is no runnable application yet. This
+The project is currently in its architecture/bootstrap phase. The reproducible
+foundation is scaffolded, but there is no runnable application yet. This
 document defines the initial product contract and the recommended implementation path.
 
 ## Development
@@ -38,13 +38,38 @@ pnpm test:integration
 pnpm build
 ```
 
+The workspace does not yet contain a `pnpm-lock.yaml`, so CI deliberately leaves
+pnpm caching disabled and installs with `--no-frozen-lockfile`. If a workflow enables
+`actions/setup-node`'s pnpm cache before the lockfile is committed, setup fails during
+cache initialization with “Dependencies lock file is not found,” before the install
+step runs. Generate and commit the lockfile before enabling that cache.
+
 Start or stop the local data services with `docker compose up -d` and
 `docker compose down`. PostgreSQL and Redis bind only to loopback and use development
 data volumes. The checked-in database password is exclusively for local development;
 deployment configuration must supply secrets externally.
 
+Copy `.env.example` to `.env` for local processes, then validate it at each application
+startup with `@agora-bots/config`; required URLs, environment, and log level have no
+silent defaults. Apply forward-only migrations with
+`pnpm --filter @agora-bots/db migrate`. Migration checksums prevent editing an
+already-applied file.
+
 The initial `packages/providers` boundary contains a deterministic fake streaming
 provider for tests. It makes no network requests and is not a production provider.
+The `packages/domain` boundary provides injectable clock, randomness, and ID seams plus
+a pure UUIDv7 encoder, so tests can reproduce identifiers without hiding nondeterminism
+inside domain behavior.
+The `packages/observability` boundary emits level-filtered JSON records with required
+correlation context and recursive redaction of common sensitive fields.
+The first M2 domain increment models session creation, queueing, execution, terminal
+states, strict two-participant alternation, and pre/post-call enforcement of message,
+token, duration, and integer-microunit cost limits. Repository and transport layers are
+not implemented yet. The local M2 persistence schema covers immutable bot/scenario
+versions, bounded sessions, exactly two participants before execution, append-only
+sequenced events, provider attempts, a transactional outbox, renewable leases, and
+rebuildable message/chunk projections. See
+[`ADR 0001`](docs/adr/0001-local-m2-event-persistence.md) for its local-only boundary.
 
 ## Product principles
 
@@ -415,9 +440,10 @@ the complete transcript from PostgreSQL.
 ## Development status
 
 There is no runnable application yet. The M1 workspace scaffold supports format, lint,
-typecheck, unit, integration, and build validation; application, database migration,
-and browser checks will arrive in later vertical increments. Contributor and Codex
-workflow rules live in [`AGENTS.md`](AGENTS.md).
+typecheck, unit, integration, build, secret, dependency, and reproducibility validation.
+Product schemas, applications, and browser checks will arrive in later vertical
+increments. Contributor and Codex workflow rules live in [`AGENTS.md`](AGENTS.md), and
+schema/versioning rules live in [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md).
 
 ## License
 
