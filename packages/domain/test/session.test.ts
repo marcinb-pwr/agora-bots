@@ -26,7 +26,7 @@ const at = (milliseconds: number): Date =>
 
 describe("session lifecycle", () => {
   it("moves through explicit states and alternates exactly two participants", () => {
-    let session = runningSession();
+    let session: Session = runningSession();
 
     const first = prepareNextTurn(session, at(2));
     expect(first.type).toBe("ready");
