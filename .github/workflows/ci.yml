@@ -15,15 +15,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+      # setup-node's pnpm cache requires pnpm-lock.yaml. Keep caching disabled until
+      # the lockfile is generated and committed with the workspace dependencies.
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-          cache: pnpm
       - run: pnpm install --no-frozen-lockfile
+      - run: pnpm secrets:check
+      - run: pnpm manifest > runtime-manifest.json
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: docker compose up -d --wait
+      - run: pnpm --filter @agora-bots/db migrate
+        env:
+          DATABASE_URL: postgresql://agora_bots:local-development-only@127.0.0.1:5432/agora_bots
       - run: pnpm test:integration
+        env:
+          DATABASE_URL: postgresql://agora_bots:local-development-only@127.0.0.1:5432/agora_bots
+          REDIS_URL: redis://127.0.0.1:6379
       - run: pnpm build
       - run: pnpm audit --audit-level=high
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-manifest
+          path: runtime-manifest.json
+      - if: always()
+        run: docker compose down --volumes

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { FakeProvider, type CompletionRequest } from "../src/index.js";
+import { unicodeFixture } from "./fixtures/unicode.js";
 
 const request: CompletionRequest = {
   idempotencyKey: "session-1:turn-1:attempt-1",
@@ -31,6 +32,20 @@ describe("FakeProvider", () => {
         usage: { inputTokens: 1, outputTokens: 3 },
       },
     ]);
+  });
+
+  it("preserves representative Unicode chunks byte-for-byte", async () => {
+    const provider = new FakeProvider(unicodeFixture);
+    const events = await collect(provider.streamCompletion(request));
+    const reconstructed = events
+      .filter((event) => event.type === "text.delta")
+      .map((event) => event.text)
+      .join("");
+
+    expect(reconstructed).toBe(unicodeFixture.text);
+    expect(new TextEncoder().encode(reconstructed)).toEqual(
+      new TextEncoder().encode(unicodeFixture.text),
+    );
   });
 });
 
