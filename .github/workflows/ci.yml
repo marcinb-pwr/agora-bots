@@ -22,7 +22,8 @@ jobs:
           node-version-file: .node-version
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm secrets:check
-      - run: pnpm manifest > runtime-manifest.json
+      # Invoke the script directly so pnpm's lifecycle banner does not corrupt JSON.
+      - run: node scripts/runtime-manifest.mjs > runtime-manifest.json
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
