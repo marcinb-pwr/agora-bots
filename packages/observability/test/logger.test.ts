@@ -23,7 +23,7 @@ describe("createJsonLogger", () => {
     });
 
     expect(lines).toHaveLength(1);
-    expect(JSON.parse(lines[0]!)).toEqual({
+    expect(JSON.parse(lines.join(""))).toEqual({
       correlationId: "correlation-1",
       event: "session.started",
       fields: {

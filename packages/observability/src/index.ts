@@ -77,10 +77,18 @@ export function createJsonLogger(options: {
   };
 
   return {
-    debug: (event, fields) => write("debug", event, fields),
-    error: (event, fields) => write("error", event, fields),
-    info: (event, fields) => write("info", event, fields),
-    warn: (event, fields) => write("warn", event, fields),
+    debug: (event, fields) => {
+      write("debug", event, fields);
+    },
+    error: (event, fields) => {
+      write("error", event, fields);
+    },
+    info: (event, fields) => {
+      write("info", event, fields);
+    },
+    warn: (event, fields) => {
+      write("warn", event, fields);
+    },
   };
 }
 

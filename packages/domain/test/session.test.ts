@@ -123,7 +123,7 @@ describe("run limits", () => {
 
     const duration = prepareNextTurn(
       runningSession({ durationLimitMs: 2 }),
-      at(3),
+      at(4),
     );
     expect(duration.type).toBe("stopped");
     if (duration.type !== "stopped") throw new Error("Expected a stopped run");

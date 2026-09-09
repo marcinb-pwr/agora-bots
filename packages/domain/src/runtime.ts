@@ -42,8 +42,8 @@ export function uuidV7(timestamp: Date, randomBytes: Uint8Array): string {
   }
 
   bytes.set(randomBytes, 6);
-  bytes[6] = (bytes[6]! & 0x0f) | 0x70;
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x70;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
 
   const hexadecimal = Array.from(bytes, (byte) =>
     byte.toString(16).padStart(2, "0"),

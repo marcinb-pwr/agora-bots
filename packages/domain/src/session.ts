@@ -173,7 +173,7 @@ export function commitTurn(
   if (input.participantId !== expectedParticipant) {
     throw new SessionDomainError(
       "out_of_turn",
-      `Expected participant at index ${session.nextParticipantIndex}`,
+      `Expected participant at index ${String(session.nextParticipantIndex)}`,
     );
   }
   validateTurnUsage(input.usage);

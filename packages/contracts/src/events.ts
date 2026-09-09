@@ -21,7 +21,7 @@ export interface CanonicalEventV1 {
     | "session.started";
   readonly occurredAt: string;
   readonly participantId?: string;
-  readonly payload: { readonly [key: string]: JsonValue };
+  readonly payload: Readonly<Record<string, JsonValue>>;
   readonly schemaVersion: 1;
   readonly sequence: number;
   readonly sessionId: string;
@@ -125,16 +125,17 @@ export function parseCanonicalEventV1(value: unknown): CanonicalEventV1 {
     issues.push("payload must be a JSON object");
   validatePayload(eventType, value.payload, participantId, issues);
 
-  if (issues.length > 0) throw new ContractValidationError(issues);
+  if (issues.length > 0 || eventId === undefined || sessionId === undefined)
+    throw new ContractValidationError(issues);
   return {
-    eventId: eventId!,
+    eventId,
     eventType: eventType as CanonicalEventV1["eventType"],
     occurredAt: occurredAt as string,
     ...(participantId === undefined ? {} : { participantId }),
     payload: value.payload as CanonicalEventV1["payload"],
     schemaVersion: 1,
     sequence: sequence as number,
-    sessionId: sessionId!,
+    sessionId,
   };
 }
 

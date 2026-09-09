@@ -9,6 +9,10 @@ export default tseslint.config(
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
   {
+    files: ["**/*.{js,mjs,cjs}"],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
     files: ["**/*.ts"],
     languageOptions: {
       parserOptions: {
