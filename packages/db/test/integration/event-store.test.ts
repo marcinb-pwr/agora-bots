@@ -236,4 +236,48 @@ describe.skipIf(databaseUrl === undefined)("event store", () => {
       true,
     );
   });
+
+  it("renews only a live lease owned by the requesting worker", async () => {
+    const acquiredAt = new Date();
+    const acquired = await store.acquireLease({
+      durationMs: 1_000,
+      now: acquiredAt,
+      ownerId: "renewing-worker",
+      sessionId: id.session,
+    });
+    expect(acquired).toBeDefined();
+
+    const renewedAt = new Date(acquiredAt.getTime() + 500);
+    await expect(
+      store.renewLease({
+        durationMs: 2_000,
+        now: renewedAt,
+        ownerId: "other-worker",
+        sessionId: id.session,
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      store.renewLease({
+        durationMs: 2_000,
+        now: renewedAt,
+        ownerId: "renewing-worker",
+        sessionId: id.session,
+      }),
+    ).resolves.toEqual({
+      expiresAt: new Date(renewedAt.getTime() + 2_000).toISOString(),
+      ownerId: "renewing-worker",
+      sessionId: id.session,
+    });
+    await expect(
+      store.renewLease({
+        durationMs: 1_000,
+        now: new Date(renewedAt.getTime() + 2_000),
+        ownerId: "renewing-worker",
+        sessionId: id.session,
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      store.releaseLease(id.session, "renewing-worker"),
+    ).resolves.toBe(true);
+  });
 });

@@ -70,4 +70,24 @@ describe("event store input boundaries", () => {
     ).rejects.toThrow(/claimDurationMs/);
     expect(queried).toBe(false);
   });
+
+  it("rejects invalid lease renewal input before querying", async () => {
+    let queried = false;
+    const store = createEventStore({
+      query: () => {
+        queried = true;
+        return Promise.reject(new Error("unexpected query"));
+      },
+    } as unknown as Parameters<typeof createEventStore>[0]);
+
+    await expect(
+      store.renewLease({
+        durationMs: 0,
+        now: new Date("2026-01-01T00:00:00.000Z"),
+        ownerId: "worker-a",
+        sessionId: "session-id",
+      }),
+    ).rejects.toThrow(/leaseDurationMs/);
+    expect(queried).toBe(false);
+  });
 });

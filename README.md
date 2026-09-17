@@ -76,6 +76,9 @@ key, exposes bounded sequence-ordered reads for durable stream resume, and provi
 renewable owner-checked session leases. Outbox publishers claim bounded batches with
 expiring claim tokens; only the current claim can acknowledge publication, so concurrent
 or stale publishers cannot silently mark each other's work complete.
+Lease renewal is owner-checked and succeeds only while the existing lease is still live,
+preventing a worker that paused past expiry from reclaiming ownership by heartbeat after
+another worker becomes eligible to recover the session.
 
 The first runnable product remains local-only and English-only for conversation analysis.
 System prompts are public provenance, so they must never contain secrets or confidential

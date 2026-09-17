@@ -52,6 +52,12 @@ export interface EventStore {
     readonly ownerId: string;
     readonly publishedAt: Date;
   }): Promise<boolean>;
+  renewLease(input: {
+    readonly durationMs: number;
+    readonly now: Date;
+    readonly ownerId: string;
+    readonly sessionId: string;
+  }): Promise<Lease | undefined>;
   releaseOutboxClaim(input: {
     readonly claimId: string;
     readonly outboxId: string;
@@ -67,6 +73,7 @@ export function createEventStore(pool: Pool): EventStore {
     claimOutbox: (input) => claimOutbox(pool, input),
     listEventsAfter: (input) => listEventsAfter(pool, input),
     markOutboxPublished: (input) => markOutboxPublished(pool, input),
+    renewLease: (input) => renewLease(pool, input),
     releaseOutboxClaim: async (input) => {
       assertNonEmpty(input.claimId, "claimId");
       assertNonEmpty(input.ownerId, "ownerId");
@@ -333,6 +340,44 @@ async function acquireLease(
       };
 }
 
+async function renewLease(
+  pool: Pool,
+  input: {
+    readonly durationMs: number;
+    readonly now: Date;
+    readonly ownerId: string;
+    readonly sessionId: string;
+  },
+): Promise<Lease | undefined> {
+  assertNonEmpty(input.ownerId, "ownerId");
+  assertNonEmpty(input.sessionId, "sessionId");
+  const expiresAt = addDuration(input.now, input.durationMs, "leaseDurationMs");
+  const result = await pool.query<{
+    expires_at: string;
+    owner_id: string;
+    session_id: string;
+  }>(
+    `UPDATE session_leases
+     SET expires_at = $4, updated_at = $3
+     WHERE session_id = $1 AND owner_id = $2 AND expires_at > $3
+     RETURNING session_id, owner_id, expires_at::text`,
+    [
+      input.sessionId,
+      input.ownerId,
+      input.now.toISOString(),
+      expiresAt.toISOString(),
+    ],
+  );
+  const row = result.rows[0];
+  return row === undefined
+    ? undefined
+    : {
+        expiresAt: new Date(row.expires_at).toISOString(),
+        ownerId: row.owner_id,
+        sessionId: row.session_id,
+      };
+}
+
 interface EventRow {
   readonly event_type: string;
   readonly id: string;
@@ -379,10 +424,14 @@ function assertValidDate(value: Date, name: string): void {
     throw new TypeError(`${name} must be valid`);
 }
 
-function addDuration(now: Date, durationMs: number): Date {
+function addDuration(
+  now: Date,
+  durationMs: number,
+  durationName = "claimDurationMs",
+): Date {
   assertValidDate(now, "now");
   if (!Number.isSafeInteger(durationMs) || durationMs <= 0)
-    throw new TypeError("claimDurationMs must be a positive safe integer");
+    throw new TypeError(`${durationName} must be a positive safe integer`);
   const result = new Date(now.getTime() + durationMs);
   assertValidDate(result, "claim expiry");
   return result;
