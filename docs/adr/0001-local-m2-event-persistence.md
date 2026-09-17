@@ -18,6 +18,9 @@ PostgreSQL is the local source of truth. Immutable bot and scenario versions are
 by sessions. Canonical events use a per-session sequence and idempotency key and cannot be
 updated or deleted. Session state changes, events, and an outbox row are committed in one
 transaction. A worker must hold a renewable PostgreSQL lease before advancing a session.
+Outbox publishers likewise claim bounded batches with expiring, unique claim IDs; an
+acknowledgement must match both the publisher and current claim so stale delivery work
+cannot mark a newer publisher's work complete.
 Provider attempts retain normalized usage, finish/error classification, and whether
 output is partial; provider secrets and raw responses are never persisted.
 
@@ -50,6 +53,7 @@ publication or use of real personal data.
 
 ## Rollout and rollback
 
-Apply migration `0002-local-runner.sql` after the extension migration. Roll back during
-local development by destroying the Compose volume. Once later migrations depend on
-this schema, use forward fixes rather than editing the applied migration.
+Apply migration `0002-local-runner.sql` after the extension migration, followed by
+`0003-outbox-claims.sql`. Roll back during local development by destroying the Compose
+volume. Once later migrations depend on this schema, use forward fixes rather than
+editing an applied migration.

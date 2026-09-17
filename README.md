@@ -21,7 +21,7 @@ document defines the initial product contract and the recommended implementation
 
 ### Prerequisites
 
-- Node.js 22 (see `.node-version`)
+- Node.js 24 (see `.node-version`)
 - Corepack with pnpm 10.28.1
 - Docker with Compose for the local PostgreSQL and Redis dependencies
 
@@ -64,12 +64,25 @@ The `packages/observability` boundary emits level-filtered JSON records with req
 correlation context and recursive redaction of common sensitive fields.
 The first M2 domain increment models session creation, queueing, execution, terminal
 states, strict two-participant alternation, and pre/post-call enforcement of message,
-token, duration, and integer-microunit cost limits. Repository and transport layers are
-not implemented yet. The local M2 persistence schema covers immutable bot/scenario
+token, duration, and integer-microunit cost limits. Transport layers are not implemented
+yet. The local M2 persistence schema covers immutable bot/scenario
 versions, bounded sessions, exactly two participants before execution, append-only
 sequenced events, provider attempts, a transactional outbox, renewable leases, and
 rebuildable message/chunk projections. See
 [`ADR 0001`](docs/adr/0001-local-m2-event-persistence.md) for its local-only boundary.
+The `@agora-bots/db` event store serializes per-session appends, writes each canonical
+event and its outbox record in one transaction, deduplicates redelivery by idempotency
+key, exposes bounded sequence-ordered reads for durable stream resume, and provides
+renewable owner-checked session leases. Outbox publishers claim bounded batches with
+expiring claim tokens; only the current claim can acknowledge publication, so concurrent
+or stale publishers cannot silently mark each other's work complete.
+
+The first runnable product remains local-only and English-only for conversation analysis.
+System prompts are public provenance, so they must never contain secrets or confidential
+data. Bots use direct, bounded LLM next-token generation over message history: there is
+no agent harness, planning loop, tools, retrieval, persistent bot memory, code execution,
+or model-initiated side effect. See
+[`ADR 0002`](docs/adr/0002-local-classical-llm-scope.md) for the accepted scope.
 
 ## Product principles
 
@@ -163,7 +176,7 @@ Redis/BullMQ <--------------------------- Worker
 
 | Area | Initial choice | Why |
 | --- | --- | --- |
-| Language | TypeScript on Node.js 22 | One typed language across UI, API, workers, and provider adapters. |
+| Language | TypeScript on Node.js 24 | One typed language across UI, API, workers, and provider adapters. |
 | Repository | pnpm workspace + Turborepo | Fast, explicit monorepo boundaries and shared tooling. |
 | Web | Next.js (App Router) | Server-rendered discovery pages and a capable interactive client. |
 | API | Fastify + TypeBox/OpenAPI | A small, explicit HTTP boundary with runtime validation. |
@@ -303,8 +316,8 @@ All write endpoints validate an idempotency key. Cursor pagination is used every
 - `GET /v1/analytics/terms` — time-bucketed, filterable aggregate term statistics.
 - Administrator endpoints create new bot/scenario versions and change publication state.
 
-Never expose provider credentials, hidden system prompts, internal moderation details,
-or raw provider payloads through public representations.
+Expose the public system-prompt provenance defined by ADR 0002, but never expose provider
+credentials, internal moderation details, or raw provider payloads through representations.
 
 ## Analysis approach
 
@@ -343,7 +356,8 @@ accidentally counted as the same observation.
 ## Security, privacy, and cost controls
 
 - Keep secrets in a managed secret store or environment injection; redact authorization
-  headers, prompts marked private, and provider payloads from logs.
+  headers, transcript and system-prompt content, and provider payloads from logs. Public
+  provenance belongs in an explicit representation, not operational logs.
 - Treat model output as untrusted input. Escape it in the UI, apply a strict Content
   Security Policy, and never execute model-produced markup, URLs, or tool instructions.
 - Start with no tools or retrieval available to bots. Add each capability through an
@@ -411,11 +425,22 @@ the complete transcript from PostgreSQL.
 4. Implement the orchestration state machine and property-test limit/idempotency rules.
 5. Build the live transcript vertical slice, then add real provider adapters one at a
    time behind contract tests.
-6. Validate exact word/passage offsets and cross-session search on a multilingual fixture
-   corpus before building dashboards; add optional recorded playback after usability
-   testing, not before.
+6. Validate exact word/passage offsets and cross-session search on an English Unicode
+   fixture corpus before building dashboards; add languages only with separate quality
+   gates, and add optional recorded playback after usability testing, not before.
 
-## Decisions needed before coding
+## Accepted initial scope decisions
+
+- The first application is local-only; hosted access and multi-tenant authorization are
+  deferred.
+- English is the only initially supported conversation-analysis language. Canonical
+  storage still preserves other Unicode text exactly, without claiming analysis support.
+- System prompts are public research provenance and must contain no secrets, personal
+  data, or confidential instructions.
+- Bots use classical next-token generation only. Agent harnesses, planning, tools,
+  retrieval, persistent memory, and model-initiated side effects are out of scope.
+
+## Decisions needed before hosted or public use
 
 - Who may create sessions in the first deployment: administrators, invited users, or
   anyone? What quotas apply?
@@ -423,10 +448,8 @@ the complete transcript from PostgreSQL.
   retention guarantees are required?
 - Which first provider/model and hosting region are acceptable, and may transcript data
   leave that region?
-- Are system prompts public research metadata or confidential configuration?
 - What do “brand preference” and “topic preference” mean statistically, and what minimum
   sample size and controls are required before showing that label?
-- Which languages must tokenization, dictionaries, moderation, and search support in v1?
 - What are the maximum per-run and monthly budgets, and who receives budget alerts?
 
 ## Non-goals for the first release
