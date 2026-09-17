@@ -16,8 +16,7 @@ export class FakeProvider implements ProviderAdapter {
   public async *streamCompletion(
     request: CompletionRequest,
   ): AsyncIterable<CompletionEvent> {
-    void request;
-    await Promise.resolve();
+    await Promise.resolve(request);
 
     for (const text of this.response.chunks) {
       yield { type: "text.delta", text };

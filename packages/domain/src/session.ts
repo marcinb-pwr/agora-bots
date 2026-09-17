@@ -265,7 +265,7 @@ function terminal(
     endedAt: toIsoTimestamp(endedAt),
     status,
     stopReason,
-  } as TerminalSession;
+  };
 }
 
 function assertStatus<Status extends SessionStatus>(
