@@ -126,9 +126,9 @@ optional and must not delay research-quality search or accessibility.
 - Build overlapping sentence-aware *k*-word passages (initial proposal: 20 words,
   10-word stride), exact/phrase search, reviewed dictionaries and aliases, and stable
   transcript-span links.
-- Publish a multilingual gold fixture set covering punctuation, emoji, normalization,
-  combining characters, right-to-left text, contractions, hyphenation, and sentence
-  boundaries.
+- Publish an English Unicode gold fixture set covering punctuation, emoji, normalization,
+  combining characters, contractions, hyphenation, and sentence boundaries. Each later
+  language adds reviewed fixtures and must pass the same gates before being supported.
 - Define separate quality metrics for token boundaries, source offsets, exact retrieval,
   dictionary entity resolution, ranking, and indexing latency.
 
@@ -137,7 +137,8 @@ optional and must not delay research-quality search or accessibility.
 - Every benchmark result round-trips to the exact canonical substring; reconstructed
   chunks/messages match canonical text byte-for-byte where applicable.
 - Recall/precision thresholds are written before benchmark evaluation and met on the
-  held-out fixtures. Failures remain visible by language rather than being averaged away.
+  held-out fixtures. When more languages are added, failures remain visible by language
+  rather than being averaged away.
 - Rebuilding an index version is idempotent, visibility-safe, and leaves the prior
   version available until cutover.
 
