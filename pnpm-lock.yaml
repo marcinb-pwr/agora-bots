@@ -57,8 +57,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/db
       fastify:
-        specifier: 5.6.0
-        version: 5.6.0
+        specifier: 5.8.5
+        version: 5.8.5
       pg:
         specifier: 8.23.0
         version: 8.23.0
@@ -719,8 +719,8 @@ packages:
   fast-uri@4.2.0:
     resolution: {integrity: sha512-13WQ1fc3rKNqctRaXC/gFe3hFQ2zcUsZlMTB1X30CCrWJGi+LQNO7+9Ku9mKYzo3KVnZ8eRGLTXzCbnXKgddNQ==}
 
-  fastify@5.6.0:
-    resolution: {integrity: sha512-9j2r9TnwNsfGiCKGYT0Voqy244qwcoYM9qvNi/i+F8sNNWDnqUEVuGYNc9GyjldhXmMlJmVPS6gI1LdvjYGRJw==}
+  fastify@5.8.5:
+    resolution: {integrity: sha512-Yqptv59pQzPgQUSIm87hMqHJmdkb1+GPxdE6vW6FRyVE9G86mt7rOghitiU4JHRaTyDUk9pfeKmDeu70lAwM4Q==}
 
   fastq@1.20.3:
     resolution: {integrity: sha512-XKv5nnLs6nLF71NgiKJLIZFLkPyIEuOselLG7ujZnGrRfQK8HpvY+WqKhAJUAdLomwVHErVS4LfxFlPq0/FTAw==}
@@ -1739,7 +1739,7 @@ snapshots:
 
   fast-uri@4.2.0: {}
 
-  fastify@5.6.0:
+  fastify@5.8.5:
     dependencies:
       '@fastify/ajv-compiler': 4.0.6
       '@fastify/error': 4.2.0
