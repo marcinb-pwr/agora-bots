@@ -5,6 +5,8 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
+import { connectWithRetry } from "./connect-with-retry.mjs";
+
 const { Client } = pg;
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -20,8 +22,14 @@ const migrationNames = (await readdir(migrationsDirectory))
   .filter((name) => /^\d{4}-[a-z0-9-]+\.sql$/.test(name))
   .sort();
 
-const client = new Client({ connectionString: databaseUrl });
-await client.connect();
+const client = await connectWithRetry({
+  createClient: () => new Client({ connectionString: databaseUrl }),
+  onRetry: ({ attempt, maxAttempts, retryDelayMs }) => {
+    process.stderr.write(
+      `Database is not ready; retrying connection in ${retryDelayMs}ms (${attempt}/${maxAttempts})\n`,
+    );
+  },
+});
 try {
   // Serialize migration runners; session-scoped locks are released on disconnect too.
   await client.query("SELECT pg_advisory_lock(675701847)");

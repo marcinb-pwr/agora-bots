@@ -51,7 +51,9 @@ Copy `.env.example` to `.env` for local processes, then validate it at each appl
 startup with `@agora-bots/config`; required URLs, environment, and log level have no
 silent defaults. Apply forward-only migrations with
 `pnpm --filter @agora-bots/db migrate`. Migration checksums prevent editing an
-already-applied file.
+already-applied file. The migration command waits up to 30 connection attempts for a
+starting PostgreSQL server, while configuration, authentication, and SQL errors still
+fail immediately.
 
 After building and migrating, run the three local processes in separate terminals:
 

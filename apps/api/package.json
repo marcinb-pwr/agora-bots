@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@agora-bots/contracts": "workspace:*",
-    "fastify": "5.6.0",
     "@agora-bots/db": "workspace:*",
+    "fastify": "5.8.5",
     "pg": "8.23.0"
   },
   "devDependencies": {
