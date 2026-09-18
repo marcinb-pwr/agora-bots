@@ -8,7 +8,7 @@
     "pg": "8.23.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node --check scripts/migrate.mjs",
+    "build": "tsc -p tsconfig.build.json && node --check scripts/migrate.mjs && node --check scripts/connect-with-retry.mjs",
     "lint": "eslint .",
     "migrate": "node scripts/migrate.mjs",
     "test": "vitest run test --exclude 'test/integration/**'",

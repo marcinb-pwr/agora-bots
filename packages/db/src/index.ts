@@ -5,3 +5,8 @@ export {
   type EventStore,
   type Lease,
 } from "./event-store.js";
+export {
+  createSessionStore,
+  type SessionStore,
+  SessionStoreError,
+} from "./session-store.js";
