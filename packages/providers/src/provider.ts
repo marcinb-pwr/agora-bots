@@ -19,8 +19,21 @@ export type CompletionEvent =
     };
 
 export interface ProviderUsage {
+  readonly costMicrounits: number;
   readonly inputTokens: number;
   readonly outputTokens: number;
+}
+
+export type ProviderErrorKind = "ambiguous" | "retryable" | "terminal";
+
+export class ProviderError extends Error {
+  public constructor(
+    readonly kind: ProviderErrorKind,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ProviderError";
+  }
 }
 
 export interface ProviderAdapter {

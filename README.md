@@ -13,9 +13,9 @@ visitor can click or search a word, phrase, entity, or passage to discover where
 appears, how frequently different bots use it, which words surround it, and which
 semantically similar passages occur in other sessions.
 
-The project is currently in its architecture/bootstrap phase. The reproducible
-foundation is scaffolded, but there is no runnable application yet. This
-document defines the initial product contract and the recommended implementation path.
+The project is currently implementing the local M2 durable-runner milestone. A runnable
+fake-provider vertical slice can create, stream, cancel, recover, and reload bounded
+two-bot sessions; hosted access, a paid provider, and research analysis remain deferred.
 
 ## Development
 
@@ -29,7 +29,7 @@ Install the pinned workspace dependencies and run the validation suite:
 
 ```bash
 corepack enable
-pnpm install --no-frozen-lockfile
+pnpm install --frozen-lockfile
 pnpm format:check
 pnpm lint
 pnpm typecheck
@@ -38,11 +38,9 @@ pnpm test:integration
 pnpm build
 ```
 
-The workspace does not yet contain a `pnpm-lock.yaml`, so CI deliberately leaves
-pnpm caching disabled and installs with `--no-frozen-lockfile`. If a workflow enables
-`actions/setup-node`'s pnpm cache before the lockfile is committed, setup fails during
-cache initialization with “Dependencies lock file is not found,” before the install
-step runs. Generate and commit the lockfile before enabling that cache.
+The committed `pnpm-lock.yaml` is the dependency source of truth. CI uses a frozen
+install and pnpm caching so dependency drift fails validation rather than silently
+changing the build.
 
 Start or stop the local data services with `docker compose up -d` and
 `docker compose down`. PostgreSQL and Redis bind only to loopback and use development
@@ -55,6 +53,20 @@ silent defaults. Apply forward-only migrations with
 `pnpm --filter @agora-bots/db migrate`. Migration checksums prevent editing an
 already-applied file.
 
+After building and migrating, run the three local processes in separate terminals:
+
+```bash
+pnpm --filter @agora-bots/api start
+pnpm --filter @agora-bots/worker start
+pnpm --filter @agora-bots/web dev
+```
+
+Open `http://127.0.0.1:3000`. The checked-in catalog entries and provider responses are
+synthetic and deterministic. The worker polls PostgreSQL for durable queued/running
+sessions; a restart reconstructs progress from canonical events and never trusts an
+in-memory job payload. This is deliberately a local execution path, not a production
+queue, authentication, or deployment design.
+
 The initial `packages/providers` boundary contains a deterministic fake streaming
 provider for tests. It makes no network requests and is not a production provider.
 The `packages/domain` boundary provides injectable clock, randomness, and ID seams plus
@@ -62,10 +74,11 @@ a pure UUIDv7 encoder, so tests can reproduce identifiers without hiding nondete
 inside domain behavior.
 The `packages/observability` boundary emits level-filtered JSON records with required
 correlation context and recursive redaction of common sensitive fields.
-The first M2 domain increment models session creation, queueing, execution, terminal
+The M2 domain increment models session creation, queueing, execution, terminal
 states, strict two-participant alternation, and pre/post-call enforcement of message,
-token, duration, and integer-microunit cost limits. Transport layers are not implemented
-yet. The local M2 persistence schema covers immutable bot/scenario
+token, duration, and integer-microunit cost limits. The local API exposes validated
+create/get/cancel commands and resumable durable SSE, and the minimal web surface renders
+provider text without HTML interpretation. The local M2 persistence schema covers immutable bot/scenario
 versions, bounded sessions, exactly two participants before execution, append-only
 sequenced events, provider attempts, a transactional outbox, renewable leases, and
 rebuildable message/chunk projections. See

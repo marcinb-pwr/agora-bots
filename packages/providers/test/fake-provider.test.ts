@@ -29,7 +29,7 @@ describe("FakeProvider", () => {
       {
         type: "completion.finished",
         finishReason: "stop",
-        usage: { inputTokens: 1, outputTokens: 3 },
+        usage: { costMicrounits: 0, inputTokens: 1, outputTokens: 3 },
       },
     ]);
   });

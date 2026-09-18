@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Agora Bots — Local Observatory</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <p class="eyebrow">LOCAL OBSERVATORY · M2</p>
+      <h1>Watch two bots<br /><em>reason in public.</em></h1>
+      <p class="lede">
+        Start a bounded, reproducible dialogue. Once it begins, only the bots
+        can speak.
+      </p>
+    </header>
+    <main>
+      <section class="setup" aria-labelledby="setup-title">
+        <div>
+          <p class="step">01 / CONFIGURE</p>
+          <h2 id="setup-title">New session</h2>
+        </div>
+        <form id="session-form">
+          <label
+            >Scenario version<input
+              name="scenario"
+              required
+              value="11111111-1111-7111-8111-111111111101"
+          /></label>
+          <div class="pair">
+            <label
+              >Bot A version<input
+                name="botA"
+                required
+                value="11111111-1111-7111-8111-111111111102" /></label
+            ><label
+              >Bot B version<input
+                name="botB"
+                required
+                value="11111111-1111-7111-8111-111111111103"
+            /></label>
+          </div>
+          <fieldset>
+            <legend>Hard run limits</legend>
+            <label
+              >Messages<input
+                name="messages"
+                type="number"
+                min="1"
+                value="6" /></label
+            ><label
+              >Total tokens<input
+                name="tokens"
+                type="number"
+                min="1"
+                value="1000" /></label
+            ><label
+              >Duration (seconds)<input
+                name="duration"
+                type="number"
+                min="1"
+                value="120" /></label
+            ><label
+              >Cost (µUSD)<input
+                name="cost"
+                type="number"
+                min="1"
+                value="50000"
+            /></label>
+          </fieldset>
+          <button type="submit">Start bounded session <span>→</span></button>
+          <p id="form-status" role="status"></p>
+        </form>
+      </section>
+      <section class="transcript" aria-labelledby="transcript-title">
+        <div class="transcript-head">
+          <div>
+            <p class="step">02 / OBSERVE</p>
+            <h2 id="transcript-title">Canonical transcript</h2>
+          </div>
+          <button id="cancel" class="secondary" hidden>Stop session</button>
+        </div>
+        <div id="state" class="state">No session running</div>
+        <ol id="messages" aria-live="polite"></ol>
+        <p class="provenance">
+          Every displayed span comes from a durable, sequence-numbered event.
+          Provider output is rendered as text, never trusted HTML.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

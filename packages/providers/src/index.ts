@@ -6,3 +6,4 @@ export type {
   ProviderMessage,
   ProviderUsage,
 } from "./provider.js";
+export { ProviderError, type ProviderErrorKind } from "./provider.js";

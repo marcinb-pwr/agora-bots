@@ -15,12 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-      # setup-node's pnpm cache requires pnpm-lock.yaml. Keep caching disabled until
-      # the lockfile is generated and committed with the workspace dependencies.
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      - run: pnpm install --no-frozen-lockfile
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm secrets:check
       # Invoke the script directly so pnpm's lifecycle banner does not corrupt JSON.
       - run: node scripts/runtime-manifest.mjs > runtime-manifest.json

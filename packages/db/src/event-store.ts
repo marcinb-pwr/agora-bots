@@ -226,6 +226,7 @@ async function append(
         JSON.stringify(event.payload),
       ],
     );
+    await applyEvent(client, event);
     await client.query(
       `INSERT INTO outbox (id, event_id, topic, created_at)
        VALUES ($1, $2, $3, $4)`,
@@ -239,6 +240,118 @@ async function append(
   } finally {
     client.release();
   }
+}
+
+async function applyEvent(
+  client: PoolClient,
+  event: CanonicalEventV1,
+): Promise<void> {
+  if (event.eventType === "session.started") {
+    const result = await client.query(
+      `UPDATE sessions SET status = 'running', started_at = $2
+       WHERE id = $1 AND status = 'queued'`,
+      [event.sessionId, event.occurredAt],
+    );
+    if (result.rowCount !== 1) throw new Error("Session cannot be started");
+    return;
+  }
+  if (event.eventType === "message.completed") {
+    const messageId = payloadString(event, "messageId");
+    const turn = payloadInteger(event, "turn");
+    const partial = event.payload.partial === true;
+    if (event.participantId === undefined)
+      throw new Error("Completed message requires a participant");
+    await client.query(
+      `INSERT INTO messages
+         (id, session_id, participant_id, ordinal, content, partial, source_event_id,
+          input_tokens, output_tokens, cost_microunits, finish_reason)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        messageId,
+        event.sessionId,
+        event.participantId,
+        turn,
+        payloadString(event, "content"),
+        partial,
+        event.eventId,
+        payloadInteger(event, "inputTokens"),
+        payloadInteger(event, "outputTokens"),
+        payloadInteger(event, "costMicrounits"),
+        payloadString(event, "finishReason"),
+      ],
+    );
+    await client.query(
+      `INSERT INTO message_chunks
+         (id, message_id, chunk_index, text, start_offset, end_offset, source_event_id)
+       SELECT id, $1, (payload->>'chunkIndex')::integer, payload->>'text',
+              (payload->>'startOffset')::integer, (payload->>'endOffset')::integer, id
+       FROM canonical_events
+       WHERE session_id = $2 AND event_type = 'message.chunk.appended'
+         AND payload->>'messageId' = $1
+       ORDER BY sequence`,
+      [messageId, event.sessionId],
+    );
+    if (!partial) {
+      const result = await client.query(
+        `UPDATE sessions
+         SET message_count = message_count + 1,
+             input_tokens = input_tokens + $2,
+             output_tokens = output_tokens + $3,
+             cost_microunits = cost_microunits + $4,
+             next_participant_index = CASE next_participant_index WHEN 0 THEN 1 ELSE 0 END
+         WHERE id = $1 AND status = 'running'`,
+        [
+          event.sessionId,
+          payloadInteger(event, "inputTokens"),
+          payloadInteger(event, "outputTokens"),
+          payloadInteger(event, "costMicrounits"),
+        ],
+      );
+      if (result.rowCount !== 1)
+        throw new Error("Turn cannot be committed to a non-running session");
+    }
+    return;
+  }
+  const terminal = terminalState(event);
+  if (terminal !== undefined) {
+    const result = await client.query(
+      `UPDATE sessions SET status = $2, stop_reason = $3, ended_at = $4
+       WHERE id = $1 AND status IN ('queued', 'running')`,
+      [event.sessionId, terminal.status, terminal.reason, event.occurredAt],
+    );
+    if (result.rowCount !== 1) throw new Error("Session is already terminal");
+  }
+}
+
+function terminalState(
+  event: CanonicalEventV1,
+): { readonly reason: string; readonly status: string } | undefined {
+  if (event.eventType === "session.limit_reached")
+    return {
+      reason: payloadString(event, "stopReason"),
+      status: "limit_reached",
+    };
+  if (event.eventType === "session.failed")
+    return { reason: "provider_error", status: "failed" };
+  if (event.eventType === "session.completed")
+    return { reason: "conversation_completed", status: "completed" };
+  if (event.eventType === "session.cancelled")
+    return { reason: "cancelled_by_user", status: "cancelled" };
+  return undefined;
+}
+
+function payloadString(event: CanonicalEventV1, key: string): string {
+  const value = event.payload[key];
+  if (typeof value !== "string")
+    throw new Error(`Event payload ${key} is invalid`);
+  return value;
+}
+
+function payloadInteger(event: CanonicalEventV1, key: string): number {
+  const value = event.payload[key];
+  if (!Number.isSafeInteger(value) || (value as number) < 0)
+    throw new Error(`Event payload ${key} is invalid`);
+  return value as number;
 }
 
 async function listEventsAfter(

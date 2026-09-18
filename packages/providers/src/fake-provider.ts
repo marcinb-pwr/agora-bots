@@ -6,6 +6,7 @@ import type {
 
 export interface FakeProviderResponse {
   readonly chunks: readonly string[];
+  readonly costMicrounits?: number;
   readonly inputTokens: number;
   readonly outputTokens: number;
 }
@@ -26,6 +27,7 @@ export class FakeProvider implements ProviderAdapter {
       type: "completion.finished",
       finishReason: "stop",
       usage: {
+        costMicrounits: this.response.costMicrounits ?? 0,
         inputTokens: this.response.inputTokens,
         outputTokens: this.response.outputTokens,
       },
